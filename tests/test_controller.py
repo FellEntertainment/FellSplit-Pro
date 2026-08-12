@@ -456,7 +456,7 @@ class ControllerTests(unittest.TestCase):
                     layout_mode=LAYOUT_CUSTOM
                 )
             )
-            self.assertIn("wird noch eingeblendet", focused_obs.message)
+            self.assertIn("Fensterleiste mit X", focused_obs.message)
             show_window_frame.assert_called_once_with(
                 obs.hwnd,
                 obs_snapshot,
