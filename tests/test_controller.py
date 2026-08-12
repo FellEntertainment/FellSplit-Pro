@@ -93,6 +93,7 @@ class ControllerTests(unittest.TestCase):
         controller = GameWindowController()
         target = WindowInfo(123, 77, "game.exe", "My Game", 1280, 720)
         snapshot = fake_snapshot(target.hwnd)
+        target_rect = TargetRect(0, 0, 1920, 1080)
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
@@ -104,9 +105,9 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "restore_window") as restore_window,
             patch.object(win32, "get_foreground_window", return_value=target.hwnd),
             patch.object(win32, "get_window_pid", return_value=target.pid),
-            patch.object(win32, "measure_window", return_value=fake_measurement()),
+            patch.object(win32, "measure_window", return_value=fake_measurement(target_rect)),
         ):
-            status = controller.activate(AppConfig(process_name="game.exe"))
+            status = controller.activate(AppConfig(process_name="game.exe", target_rect=target_rect))
             self.assertEqual(status.state, RunState.ACTIVE)
             apply_borderless.assert_called_once()
             position_window.assert_called_once()
@@ -129,6 +130,7 @@ class ControllerTests(unittest.TestCase):
         target = WindowInfo(123, 77, "game.exe", "My Game", 1920, 1080)
         snapshot = fake_snapshot(target.hwnd)
         foreground = {"hwnd": target.hwnd, "pid": target.pid}
+        target_rect = TargetRect(0, 0, 1920, 1080)
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
@@ -141,9 +143,9 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_window_pid", side_effect=lambda _hwnd: foreground["pid"]),
             patch.object(win32, "set_window_topmost") as set_topmost,
             patch.object(win32, "force_position_window") as force_position,
-            patch.object(win32, "measure_window", return_value=fake_measurement()),
+            patch.object(win32, "measure_window", return_value=fake_measurement(target_rect)),
         ):
-            config = AppConfig(process_name="game.exe", always_on_top=True)
+            config = AppConfig(process_name="game.exe", always_on_top=True, target_rect=target_rect)
             self.assertEqual(controller.activate(config).state, RunState.ACTIVE)
             clip_cursor.assert_called_once()
 
@@ -157,6 +159,7 @@ class ControllerTests(unittest.TestCase):
     def test_auto_detect_attaches_stable_foreground_candidate(self) -> None:
         controller = GameWindowController()
         target = WindowInfo(321, 91, "newgame.exe", "New Game", 1920, 1080)
+        target_rect = TargetRect(0, 0, 1920, 1080)
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
@@ -167,13 +170,14 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "position_window"),
             patch.object(win32, "clip_cursor"),
             patch.object(win32, "get_window_pid", return_value=target.pid),
-            patch.object(win32, "measure_window", return_value=fake_measurement()),
+            patch.object(win32, "measure_window", return_value=fake_measurement(target_rect)),
             patch.object(win32, "release_cursor"),
         ):
             config = AppConfig(
                 process_name="",
                 auto_detect_games=True,
                 auto_detect_delay_seconds=0.5,
+                target_rect=target_rect,
             )
             first = controller.activate(config)
             self.assertEqual(first.state, RunState.WAITING)
@@ -222,7 +226,8 @@ class ControllerTests(unittest.TestCase):
         controller = GameWindowController()
         target = WindowInfo(123, 77, "game.exe", "My Game", 2560, 1440)
         snapshot = fake_snapshot(target.hwnd)
-        current_rect = {"value": TargetRect()}
+        target_rect = TargetRect(0, 0, 2560, 1440)
+        current_rect = {"value": target_rect}
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
@@ -241,7 +246,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_window_pid", return_value=target.pid),
         ):
             self.assertEqual(
-                controller.activate(AppConfig(process_name=target.process_name)).state,
+                controller.activate(AppConfig(process_name=target.process_name, target_rect=target_rect)).state,
                 RunState.ACTIVE,
             )
             current_rect["value"] = TargetRect(0, 0, 5120, 1440)
@@ -255,7 +260,7 @@ class ControllerTests(unittest.TestCase):
         controller = GameWindowController()
         target = WindowInfo(123, 77, "Cookie Clicker.exe", "Cookie Clicker", 5120, 1440)
         snapshot = fake_snapshot(target.hwnd)
-        requested = TargetRect()
+        requested = TargetRect(0, 0, 2560, 1440)
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
@@ -276,7 +281,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_foreground_window", return_value=target.hwnd),
             patch.object(win32, "get_window_pid", return_value=target.pid),
         ):
-            status = controller.activate(AppConfig(process_name=target.process_name))
+            status = controller.activate(AppConfig(process_name=target.process_name, target_rect=requested))
 
         self.assertEqual(status.state, RunState.ACTIVE)
         force_position.assert_called_once()
@@ -285,6 +290,8 @@ class ControllerTests(unittest.TestCase):
     def test_titlebar_is_reapplied_as_borderless_even_when_outer_rect_matches(self) -> None:
         controller = GameWindowController()
         target = WindowInfo(123, 77, "game.exe", "My Game", 2560, 1440)
+        requested = TargetRect(0, 0, 2560, 1440)
+        
         with (
             patch.object(win32, "enumerate_windows", return_value=[target]),
             patch.object(win32, "capture_window", return_value=fake_snapshot(123)),
@@ -296,11 +303,11 @@ class ControllerTests(unittest.TestCase):
                 "measure_window",
                 side_effect=[
                     fake_measurement(
-                        TargetRect(),
+                        requested,
                         client=TargetRect(8, 31, 2544, 1401),
                         decorated=True,
                     ),
-                    fake_measurement(),
+                    fake_measurement(requested),
                 ],
             ),
             patch.object(win32, "clip_cursor") as clip_cursor,
@@ -308,7 +315,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_foreground_window", return_value=123),
             patch.object(win32, "get_window_pid", return_value=77),
         ):
-            status = controller.activate(AppConfig(process_name="game.exe"))
+            status = controller.activate(AppConfig(process_name="game.exe", target_rect=requested))
 
         self.assertEqual(status.state, RunState.ACTIVE)
         force_position.assert_called_once()
@@ -320,8 +327,11 @@ class ControllerTests(unittest.TestCase):
         obs = WindowInfo(456, 88, "obs64.exe", "OBS Studio", 1920, 1080)
         game_snapshot = fake_snapshot(game.hwnd)
         obs_snapshot = fake_snapshot(obs.hwnd)
-        game_measurement = fake_measurement()
-        obs_measurement = fake_measurement(TargetRect(2560, 0, 2560, 1440))
+        
+        game_rect = TargetRect(0, 0, 2560, 1440)
+        obs_rect = TargetRect(2560, 0, 2560, 1440)
+        game_measurement = fake_measurement(game_rect)
+        obs_measurement = fake_measurement(obs_rect)
 
         with (
             patch.object(win32, "enumerate_windows", return_value=[game, obs]),
@@ -351,8 +361,10 @@ class ControllerTests(unittest.TestCase):
             status = controller.activate(
                 AppConfig(
                     process_name="game.exe",
+                    target_rect=game_rect,
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
+                    secondary_target_rect=obs_rect,
                 )
             )
             stopped = controller.deactivate()
@@ -361,7 +373,7 @@ class ControllerTests(unittest.TestCase):
         self.assertIn("Rechts: obs64.exe", status.message)
         force_position.assert_any_call(
             obs.hwnd,
-            TargetRect(2560, 0, 2560, 1440),
+            obs_rect,
             remove_borders=True,
             always_on_top=False,
         )
@@ -376,6 +388,8 @@ class ControllerTests(unittest.TestCase):
         obs_snapshot = fake_snapshot(obs.hwnd)
         foreground = {"hwnd": obs.hwnd}
         obs_frame = {"visible": False}
+        
+        game_rect = TargetRect(0, 0, 2560, 1440)
         right_rect = TargetRect(2560, 0, 2560, 1440)
 
         def process_id(hwnd: int) -> int:
@@ -383,7 +397,7 @@ class ControllerTests(unittest.TestCase):
 
         def measurement(hwnd: int) -> win32.WindowMeasurement:
             if hwnd == game.hwnd:
-                return fake_measurement()
+                return fake_measurement(game_rect)
             if obs_frame["visible"]:
                 return fake_measurement(
                     right_rect,
@@ -433,8 +447,10 @@ class ControllerTests(unittest.TestCase):
             focused_obs = controller.activate(
                 AppConfig(
                     process_name="game.exe",
+                    target_rect=game_rect,
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
+                    secondary_target_rect=right_rect,
                 )
             )
             self.assertIn("Fensterleiste mit X", focused_obs.message)
@@ -457,9 +473,10 @@ class ControllerTests(unittest.TestCase):
             controller.activate(
                 AppConfig(
                     process_name="game.exe",
+                    target_rect=TargetRect(0, 0, 2560, 1440),
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
-                    secondary_target_rect=TargetRect(2000, 0, 2560, 1440),
+                    secondary_target_rect=TargetRect(2000, 0, 4560, 1440),
                 )
             )
 
