@@ -17,7 +17,9 @@
   negativer virtueller Desktopkoordinaten.
 - Bestehende 1.2.2-Standardwerte werden automatisch zum neuen Automatikprofil;
   abweichende eigene Pixelwerte bleiben als benutzerdefiniertes Layout erhalten.
-- Konfigurationsschema 6 und 50 automatisierte Tests.
+- Windows-Kompatibilitaet der DWM-Typdefinition fuer aktuelle Python-Versionen
+  korrigiert.
+- Konfigurationsschema 6 und 51 automatisierte Tests.
 
 ## 1.2.2
 

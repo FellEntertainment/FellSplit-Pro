@@ -325,7 +325,7 @@ dieselbe EXE und benoetigt keine sichtbaren Hilfsdateien.
 py -m unittest discover -s tests -v
 ```
 
-Der automatisierte Umfang umfasst 50 Tests, unter anderem 32:9- und
+Der automatisierte Umfang umfasst 51 Tests, unter anderem 32:9- und
 21:9-Berechnungen, Monitorpositionen mit negativen Koordinaten, die sichere
 Migration alter Einstellungen und den Fehlerfall "Fenster ignoriert das Ziel,
 Maus darf nicht gesperrt werden". Die echte Interaktion mit einem

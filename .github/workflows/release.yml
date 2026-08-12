@@ -7,6 +7,15 @@ on:
       - main
     paths:
       - .github/workflows/release.yml
+      - assets/**
+      - fellsplit_pro/**
+      - tests/**
+      - FellSplitPro.pyw
+      - FellSplitPro.spec
+      - FellSplitPro.iss
+      - requirements.txt
+      - requirements-build.txt
+      - version_info.txt
 
 permissions:
   contents: write

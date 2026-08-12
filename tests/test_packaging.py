@@ -50,6 +50,11 @@ class PackagingTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertTrue((ROOT / relative).is_file())
 
+    def test_dwm_uses_hresult_from_ctypes(self) -> None:
+        source = (ROOT / "fellsplit_pro" / "win32_api.py").read_text(encoding="utf-8")
+        self.assertIn("restype = ctypes.HRESULT", source)
+        self.assertNotIn("restype = wintypes.HRESULT", source)
+
 
 if __name__ == "__main__":
     unittest.main()

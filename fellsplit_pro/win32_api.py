@@ -289,7 +289,7 @@ if IS_WINDOWS:
             wintypes.LPVOID,
             wintypes.DWORD,
         ]
-        dwmapi.DwmGetWindowAttribute.restype = wintypes.HRESULT
+        dwmapi.DwmGetWindowAttribute.restype = ctypes.HRESULT
 
 
 def require_windows() -> None:
