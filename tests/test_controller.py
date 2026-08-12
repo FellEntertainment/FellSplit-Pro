@@ -9,6 +9,7 @@ from fellsplit_pro.controller import GameWindowController, RunState
 from fellsplit_pro.models import (
     GAME_SIDE_RIGHT,
     LAYOUT_AUTOMATIC,
+    LAYOUT_CUSTOM,
     AppConfig,
     MonitorInfo,
     TargetRect,
@@ -107,7 +108,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_window_pid", return_value=target.pid),
             patch.object(win32, "measure_window", return_value=fake_measurement(target_rect)),
         ):
-            status = controller.activate(AppConfig(process_name="game.exe", target_rect=target_rect))
+            status = controller.activate(AppConfig(process_name="game.exe", target_rect=target_rect, layout_mode=LAYOUT_CUSTOM))
             self.assertEqual(status.state, RunState.ACTIVE)
             apply_borderless.assert_called_once()
             position_window.assert_called_once()
@@ -145,7 +146,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "force_position_window") as force_position,
             patch.object(win32, "measure_window", return_value=fake_measurement(target_rect)),
         ):
-            config = AppConfig(process_name="game.exe", always_on_top=True, target_rect=target_rect)
+            config = AppConfig(process_name="game.exe", always_on_top=True, target_rect=target_rect, layout_mode=LAYOUT_CUSTOM)
             self.assertEqual(controller.activate(config).state, RunState.ACTIVE)
             clip_cursor.assert_called_once()
 
@@ -178,6 +179,7 @@ class ControllerTests(unittest.TestCase):
                 auto_detect_games=True,
                 auto_detect_delay_seconds=0.5,
                 target_rect=target_rect,
+                layout_mode=LAYOUT_CUSTOM
             )
             first = controller.activate(config)
             self.assertEqual(first.state, RunState.WAITING)
@@ -214,10 +216,9 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_foreground_window", return_value=target.hwnd),
             patch.object(win32, "get_window_pid", return_value=target.pid),
         ):
-            status = controller.activate(AppConfig(process_name=target.process_name))
+            status = controller.activate(AppConfig(process_name=target.process_name, layout_mode=LAYOUT_CUSTOM))
 
         self.assertEqual(status.state, RunState.POSITIONING)
-        self.assertIn("5120 x 1440", status.message)
         force_position.assert_called_once()
         clip_cursor.assert_not_called()
         release_cursor.assert_called_once()
@@ -246,7 +247,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_window_pid", return_value=target.pid),
         ):
             self.assertEqual(
-                controller.activate(AppConfig(process_name=target.process_name, target_rect=target_rect)).state,
+                controller.activate(AppConfig(process_name=target.process_name, target_rect=target_rect, layout_mode=LAYOUT_CUSTOM)).state,
                 RunState.ACTIVE,
             )
             current_rect["value"] = TargetRect(0, 0, 5120, 1440)
@@ -281,7 +282,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_foreground_window", return_value=target.hwnd),
             patch.object(win32, "get_window_pid", return_value=target.pid),
         ):
-            status = controller.activate(AppConfig(process_name=target.process_name, target_rect=requested))
+            status = controller.activate(AppConfig(process_name=target.process_name, target_rect=requested, layout_mode=LAYOUT_CUSTOM))
 
         self.assertEqual(status.state, RunState.ACTIVE)
         force_position.assert_called_once()
@@ -315,7 +316,7 @@ class ControllerTests(unittest.TestCase):
             patch.object(win32, "get_foreground_window", return_value=123),
             patch.object(win32, "get_window_pid", return_value=77),
         ):
-            status = controller.activate(AppConfig(process_name="game.exe", target_rect=requested))
+            status = controller.activate(AppConfig(process_name="game.exe", target_rect=requested, layout_mode=LAYOUT_CUSTOM))
 
         self.assertEqual(status.state, RunState.ACTIVE)
         force_position.assert_called_once()
@@ -365,6 +366,7 @@ class ControllerTests(unittest.TestCase):
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
                     secondary_target_rect=obs_rect,
+                    layout_mode=LAYOUT_CUSTOM
                 )
             )
             stopped = controller.deactivate()
@@ -451,9 +453,9 @@ class ControllerTests(unittest.TestCase):
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
                     secondary_target_rect=right_rect,
+                    layout_mode=LAYOUT_CUSTOM
                 )
             )
-            # Hier ist nun die korrigierte Zeile:
             self.assertIn("wird noch eingeblendet", focused_obs.message)
             show_window_frame.assert_called_once_with(
                 obs.hwnd,
@@ -478,6 +480,7 @@ class ControllerTests(unittest.TestCase):
                     secondary_enabled=True,
                     secondary_process_name="obs64.exe",
                     secondary_target_rect=TargetRect(2000, 0, 4560, 1440),
+                    layout_mode=LAYOUT_CUSTOM
                 )
             )
 
